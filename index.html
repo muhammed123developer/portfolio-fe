@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!--
+      Defaults for crawlers and link previews that read raw HTML without
+      executing JavaScript. Individual pages override these at runtime through
+      the <Seo> component once React has mounted.
+    -->
+    <title>Portfolio · Full-Stack Developer</title>
+    <meta
+      name="description"
+      content="Full-stack developer building scalable, production-ready web applications with React, TypeScript, Node.js and Express."
+    />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Portfolio · Full-Stack Developer" />
+    <meta
+      property="og:description"
+      content="Full-stack developer building scalable, production-ready web applications."
+    />
+    <meta property="og:site_name" content="Portfolio" />
+    <meta name="twitter:card" content="summary" />
+
+    <!--
+      Applies the saved theme before first paint. Without this the page renders
+      light and then flips to dark a frame later, which is jarring on every
+      single load. Kept tiny and inlined for that reason, and wrapped in
+      try/catch because localStorage throws in some privacy modes.
+    -->
+    <script>
+      ;(function () {
+        try {
+          var stored = localStorage.getItem('portfolio-theme') || 'system'
+          var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+          var isDark = stored === 'dark' || (stored === 'system' && prefersDark)
+          if (isDark) document.documentElement.classList.add('dark')
+          document.documentElement.style.colorScheme = isDark ? 'dark' : 'light'
+        } catch (e) {
+          /* Theme falls back to light; the app corrects it once mounted. */
+        }
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>
+      <p style="font-family: system-ui, sans-serif; padding: 2rem">
+        This portfolio requires JavaScript to load its content from the API.
+      </p>
+    </noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
