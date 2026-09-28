@@ -33,6 +33,7 @@ interface FormValues {
   githubUrl: string
   linkedinUrl: string
   websiteUrl: string
+  resumeUrl: string
   availableForWork: boolean
 }
 
@@ -75,6 +76,7 @@ export default function AdminSettings() {
       githubUrl: profile.data.githubUrl ?? '',
       linkedinUrl: profile.data.linkedinUrl ?? '',
       websiteUrl: profile.data.websiteUrl ?? '',
+      resumeUrl: profile.data.resumeUrl ?? '',
       availableForWork: profile.data.availableForWork,
     })
   }, [profile.data, reset])
@@ -98,6 +100,7 @@ export default function AdminSettings() {
       githubUrl: values.githubUrl || null,
       linkedinUrl: values.linkedinUrl || null,
       websiteUrl: values.websiteUrl || null,
+      resumeUrl: values.resumeUrl.trim() || null,
       availableForWork: values.availableForWork,
     })
 
@@ -303,6 +306,21 @@ export default function AdminSettings() {
 
             <FormField id="websiteUrl" label="Website URL" error={errors.websiteUrl?.message}>
               {(props) => <Input {...props} placeholder="https://…" {...register('websiteUrl')} />}
+            </FormField>
+
+            <FormField
+              id="resumeUrl"
+              label="Resume link"
+              hint="Paste a Google Drive share link, with sharing set to “Anyone with the link”. Visitors get a Download resume button in the header. Leave it empty to hide the button."
+              error={errors.resumeUrl?.message}
+            >
+              {(props) => (
+                <Input
+                  {...props}
+                  placeholder="https://drive.google.com/file/d/…/view?usp=sharing"
+                  {...register('resumeUrl')}
+                />
+              )}
             </FormField>
           </CardContent>
         </Card>

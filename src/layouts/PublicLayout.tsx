@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
-import { Mail, Menu, Terminal } from 'lucide-react'
+import { Download, Mail, Menu, Terminal } from 'lucide-react'
 
 import { GithubIcon, LinkedinIcon } from '@/components/common/BrandIcons'
 
@@ -8,6 +8,7 @@ import { ThemeToggle } from '@/components/common/ThemeToggle'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { useProfile } from '@/hooks/useProfile'
+import { toResumeDownloadUrl } from '@/lib/resume'
 import { cn } from '@/lib/utils'
 
 /**
@@ -92,6 +93,21 @@ export default function PublicLayout() {
           </nav>
 
           <div className="flex items-center gap-1">
+            {/* Only shown once a resume link is set in admin Settings. */}
+            {profile?.resumeUrl && (
+              <Button size="sm" className="mr-1" asChild>
+                <a
+                  href={toResumeDownloadUrl(profile.resumeUrl)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Download resume"
+                >
+                  <Download className="size-4" aria-hidden="true" />
+                  <span className="hidden sm:inline">Download Resume</span>
+                </a>
+              </Button>
+            )}
+
             <ThemeToggle />
 
             {/* On mobile the navigation becomes a drawer. */}
