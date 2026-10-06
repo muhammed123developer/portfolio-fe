@@ -1,4 +1,9 @@
-import axios, { AxiosError, type AxiosRequestConfig } from 'axios'
+import axios, {
+  AxiosError,
+  type AxiosRequestConfig,
+  type GenericAbortSignal,
+  type InternalAxiosRequestConfig,
+} from 'axios'
 
 import type { PaginationMeta, Paged } from '@/types/api'
 
@@ -108,10 +113,32 @@ export function setUnauthorizedHandler(handler: (() => void) | null): void {
 /** Endpoints where a 401 is an expected answer, not a lost session. */
 const AUTH_ENDPOINTS = ['/auth/login', '/auth/me', '/auth/logout']
 
+/**
+ * Backoff for GETs that got no response. The API connects to its database
+ * before it listens, so on a fresh start (or a tsx-watch restart, or a cold
+ * host) the first requests hit a closed port. Retrying for ~15s rides that out
+ * instead of showing "Try again" for an API that is seconds from ready.
+ */
+const NETWORK_RETRY_DELAYS_MS = [1_000, 2_000, 4_000, 8_000]
+
+type RetryableConfig = InternalAxiosRequestConfig & { __retryCount?: number }
+
+/** Resolves after `ms`, or rejects early if the request is cancelled. */
+function waitUnlessAborted(ms: number, signal?: GenericAbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) return reject(new axios.CanceledError())
+    const timer = setTimeout(resolve, ms)
+    signal?.addEventListener?.('abort', () => {
+      clearTimeout(timer)
+      reject(new axios.CanceledError())
+    })
+  })
+}
+
 /** Turns any Axios failure into an ApiError. */
 client.interceptors.response.use(
   (response) => response,
-  (error: unknown) => {
+  async (error: unknown) => {
     if (!axios.isAxiosError(error)) {
       return Promise.reject(new ApiError('An unexpected error occurred', 0))
     }
@@ -120,6 +147,18 @@ client.interceptors.response.use(
 
     // No response at all: server down, DNS failure, CORS rejection, timeout.
     if (!axiosError.response) {
+      const config = axiosError.config as RetryableConfig | undefined
+      const attempt = config?.__retryCount ?? 0
+      const isGet = (config?.method ?? 'get').toLowerCase() === 'get'
+
+      if (config && isGet && !axios.isCancel(error) && attempt < NETWORK_RETRY_DELAYS_MS.length) {
+        config.__retryCount = attempt + 1
+        // A cancellation while waiting rejects here and reaches useApi as an
+        // abort, which it already ignores.
+        await waitUnlessAborted(NETWORK_RETRY_DELAYS_MS[attempt]!, config.signal)
+        return client.request(config)
+      }
+
       const message =
         axiosError.code === 'ECONNABORTED'
           ? 'The request timed out. Please try again.'
